@@ -141,17 +141,14 @@ def prompt_add_event(service):
     print(f"\nAbout to create: '{summary}' on {date_str} at {time_str} Dubai time ({duration} mins)")
     confirm = input("Confirm? (y/n): ").strip().lower()
     if confirm == 'y':
-        add_event(service, summary, start_iso, end_iso)
-        print(f"Added new event: {summary} on {date_str}.")
+        new_event = add_event(service, summary, start_iso, end_iso)
+        print(f"Created: {new_event.get('summary')} [id: {new_event['id']}]")
         logging.info(f"prompt_add_event() was run and added the event: {summary} on {date_str}")
     elif confirm == 'n':
         logging.info(f"prompt_add_event() was run and cancelled the addition of event: {summary}")
         return
     else:
         print("Unexpected entry!")
-
-    new_event = add_event(service, summary, start_iso, end_iso)
-    print(f"Created: {new_event.get('summary')} [id: {new_event['id']}]")
 
 
 def prompt_delete_event(service):

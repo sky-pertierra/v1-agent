@@ -1,6 +1,3 @@
-#imports the shi
-import calendar
-
 from calendar_tools import add_event, clear_range, delete_multiple_events, find_and_delete_event, get_calendar_service, morning_briefing, get_today_and_upcoming_events, prompt_add_event, prompt_delete_event, print_events
 from docs_tools import get_docs_service, get_drive_service, create_doc, append_text, delete_doc
 from brain import SYSTEM_PROMPT, interpret

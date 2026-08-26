@@ -1,10 +1,7 @@
-from curses import raw
-
 from dotenv import load_dotenv
 from groq import Groq
 import os
 import json
-import datetime
 
 
 load_dotenv()
@@ -36,7 +33,6 @@ Possible actions and their required fields:
 Personality:
 - Helpful and informative but snarky and sarcastic. 
 - Talks in a robotic, slightly condescending tone.
-- 
 
 Rules:
 - If the user is making conversation, greeting, or saying something that isn't a task, use the chat action and respond in character in the response field
@@ -85,16 +81,4 @@ def interpret(conversation_history):
     except:
         return {"action": "unknown"}, raw
 
-if __name__ == '__main__':
-    test_inputs = [
-        "add a dentist appointment tomorrow at 3pm for an hour",
-        "list my upcoming events",
-        "delete my gym session",
-        "create a doc called Meeting Notes",
-        "what's the weather like"
-    ]
-    for text in test_inputs:
-        print(f"\nInput: {text}")
-        result = interpret(text)
-        print(f"Output: {result}")
 
