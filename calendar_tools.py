@@ -1,3 +1,5 @@
+from asyncio import events
+
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -42,12 +44,13 @@ def get_credentials():
 def get_calendar_service():
     return build('calendar', 'v3', credentials=get_credentials())
 
-def get_upcoming_events(service, max_results=10):
-    """Get all upcoming events from now."""
-    now = utc_now().isoformat()
+def get_today_and_upcoming_events(service, max_results=10):
+    """Get all upcoming events from today onwards."""
+    local = local_now()
+    start_of_day = local.replace(hour=0, minute=0, second=0, microsecond=0)
     result = service.events().list(
         calendarId='primary',
-        timeMin=now,
+        timeMin=start_of_day.isoformat(),
         maxResults=max_results,
         singleEvents=True,
         orderBy='startTime'
@@ -98,6 +101,14 @@ def delete_event(service, event_id):
     """Delete a calendar event by ID."""
     service.events().delete(calendarId='primary', eventId=event_id).execute()
 
+def find_and_delete_event(service, search_term):
+    events = get_today_and_upcoming_events(service)
+    for event in events:
+        if search_term.lower() in event.get('summary', '').lower():
+            delete_event(service, event['id'])
+            return True
+    return False
+
 def print_events(events):
     if not events:
         print("No upcoming events found.")
@@ -144,7 +155,7 @@ def prompt_add_event(service):
 
 
 def prompt_delete_event(service):
-    events = get_upcoming_events(service)
+    events = get_today_and_upcoming_events(service)
     if not events:
         print("No upcoming events to delete.")
         return
@@ -173,6 +184,47 @@ def prompt_delete_event(service):
         return
     else:
         print("Unexpected entry!")
+
+def delete_multiple_events(service, search_terms): 
+    """Delete multiple events based on a list of search terms."""
+    deleted_events = []
+    for term in search_terms:
+        if find_and_delete_event(service, term):
+            deleted_events.append(term)
+    return deleted_events
+
+def clear_range(service, start_date, end_date):
+    """Delete all events in a specified date range."""
+    dubai_offset = datetime.timezone(datetime.timedelta(hours=4))
+
+    start_dt = datetime.datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=dubai_offset)
+    end_dt = (datetime.datetime.strptime(end_date, "%Y-%m-%d") + 
+    datetime.timedelta(days=1)).replace(tzinfo=dubai_offset)
+    events = service.events().list(
+        calendarId='primary',
+        timeMin=start_dt.isoformat(),
+        timeMax=end_dt.isoformat(),
+        singleEvents=True,
+        orderBy='startTime'
+    ).execute().get('items', [])
+
+    if not events:
+        print("No events found in that range.")
+        return
+
+    print(f"Found {len(events)} event(s) to delete between {start_date} and {end_date}:")
+    for e in events:
+        print(f"  - {e.get('summary', '(no title)')}")
+
+    confirm = input("Delete all events? (y/n): ").strip().lower()
+    if confirm != 'y':
+        print("Cancelled.")
+        return
+    elif confirm == 'y':
+        print("Deleting events...")
+
+    for event in events:
+        delete_event(service, event['id'])
 
 
 def format_event_time(event):
